@@ -198,6 +198,72 @@ function M.add(bufnr)
 	end)
 end
 
+function M.remove(opts)
+	opts = opts or {}
+	local bufnr = opts.bufnr or vim.api.nvim_get_current_buf()
+	local root, relpath = context_for(bufnr)
+	if not root or not relpath then
+		return
+	end
+	local line1 = opts.line1 or vim.api.nvim_win_get_cursor(0)[1]
+	local line2 = opts.line2 or line1
+	if line1 > line2 then
+		line1, line2 = line2, line1
+	end
+	local bs = get_buffer_state(bufnr)
+	local removed_ids = {}
+	for i = #bs.entries, 1, -1 do
+		local entry = bs.entries[i]
+		local line = render.current_line(bufnr, entry.extmark_id)
+		if line and line >= line1 and line <= line2 then
+			pcall(vim.api.nvim_buf_del_extmark, bufnr, render.namespace(), entry.extmark_id)
+			removed_ids[entry.id] = true
+			table.remove(bs.entries, i)
+		end
+	end
+	if not next(removed_ids) then
+		return
+	end
+	local data = storage.load(root)
+	local kept = {}
+	for _, c in ipairs(data.comments) do
+		if not (c.relpath == relpath and removed_ids[c.id]) then
+			kept[#kept + 1] = c
+		end
+	end
+	data.comments = kept
+	storage.save(root, data)
+end
+
+function M.preview(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local line = vim.api.nvim_win_get_cursor(0)[1]
+	local entry = entry_at_line(bufnr, line)
+	if not entry then
+		ui.close_popup()
+		return
+	end
+	local root = storage.root()
+	if not root then
+		return
+	end
+	local text = comment_text(storage.load(root), entry.id)
+	if not text then
+		return
+	end
+	ui.show_popup(text)
+	local group = vim.api.nvim_create_augroup("comments.nvim.preview." .. bufnr, { clear = true })
+	vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "InsertEnter", "BufLeave", "WinLeave" }, {
+		group = group,
+		buffer = bufnr,
+		once = true,
+		callback = function()
+			ui.close_popup()
+			pcall(vim.api.nvim_del_augroup_by_id, group)
+		end,
+	})
+end
+
 function M.clear(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 	local root, relpath = context_for(bufnr)

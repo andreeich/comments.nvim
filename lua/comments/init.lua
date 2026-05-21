@@ -61,8 +61,18 @@ function M.setup(opts)
 	user_command("CommentAdd", function()
 		core.add(current_buf())
 	end, {})
+	user_command("CommentRemove", function(opts)
+		core.remove({
+			bufnr = current_buf(),
+			line1 = opts.range > 0 and opts.line1 or nil,
+			line2 = opts.range > 0 and opts.line2 or nil,
+		})
+	end, { range = true })
 	user_command("CommentClear", function()
 		core.clear(current_buf())
+	end, {})
+	user_command("CommentPreview", function()
+		core.preview(current_buf())
 	end, {})
 end
 
@@ -75,8 +85,14 @@ end
 M.comment = function()
 	core.add(current_buf())
 end
+M.comment_remove = function(opts)
+	core.remove(vim.tbl_extend("force", { bufnr = current_buf() }, opts or {}))
+end
 M.comment_clear = function()
 	core.clear(current_buf())
+end
+M.comment_preview = function()
+	core.preview(current_buf())
 end
 M.comment_list = function()
 	return core.list()
