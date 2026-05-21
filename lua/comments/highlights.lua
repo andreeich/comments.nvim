@@ -8,7 +8,7 @@ local function link_default(group, fallback)
 end
 
 function M.setup()
-	link_default("CommentBody", "Comment")
+	link_default("CommentBody", "DiagnosticUnderlineInfo")
 end
 
 return M
