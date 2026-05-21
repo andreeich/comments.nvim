@@ -16,20 +16,22 @@ function M.prompt(default, on_submit)
 		height = height,
 		style = "minimal",
 		border = "rounded",
-		title = " Comment (<C-s> submit, <Esc> cancel) ",
+		title = " Comment (<CR> submit, <S-CR> newline, <Esc> cancel) ",
 		title_pos = "left",
 	})
 	local function close()
 		if vim.api.nvim_win_is_valid(win) then
 			vim.api.nvim_win_close(win, true)
 		end
+		vim.cmd("stopinsert")
 	end
 	local function submit()
 		local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
 		close()
 		on_submit(text)
 	end
-	vim.keymap.set({ "n", "i" }, "<C-s>", submit, { buffer = buf, nowait = true })
+	vim.keymap.set({ "n", "i" }, "<CR>", submit, { buffer = buf, nowait = true })
+	vim.keymap.set("i", "<S-CR>", "<CR>", { buffer = buf, nowait = true })
 	vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
 	vim.cmd("startinsert!")

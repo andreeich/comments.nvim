@@ -15,14 +15,26 @@ require("comments").setup({
 
 ## Commands
 
-- `:CommentAdd` (add/edit a comment on the current line; submit blank to delete)
-- `:CommentClear` (remove every comment on the current buffer)
+- `:CommentAdd` — add/edit a comment on the current line; blank submit deletes
+- `:CommentRemove` — remove comment on cursor line, or all comments in `:'<,'>` range
+- `:CommentClear` — remove every comment on the current buffer
+- `:CommentPreview` — popup with the full comment on the cursor line
+
+## Prompt
+
+Add/edit opens a floating buffer (markdown). Multiline supported.
+
+- `<CR>` submit
+- `<S-CR>` insert newline (requires terminal with extended keyboard protocol; use `<C-j>` as fallback)
+- `<Esc>` / `q` cancel
 
 ## Suggested keymaps
 
 ```lua
-vim.keymap.set("n", "dc", function() require("comments").comment() end)
-vim.keymap.set("n", "dC", function() require("comments").comment_clear() end)
+vim.keymap.set("n", "<leader>cc", "<cmd>CommentAdd<cr>",     { desc = "Add/Edit comment" })
+vim.keymap.set({ "n", "x" }, "<leader>cr", ":CommentRemove<cr>", { silent = true, desc = "Remove comment(s)" })
+vim.keymap.set("n", "<leader>cR", "<cmd>CommentClear<cr>",   { desc = "Clear all comments" })
+vim.keymap.set("n", "<leader>cp", "<cmd>CommentPreview<cr>", { desc = "Preview comment" })
 ```
 
 ## API
@@ -33,10 +45,12 @@ local c = require("comments")
 c.setup(opts)
 c.attach(bufnr?)
 c.detach(bufnr?)
-c.comment()         -- add/edit comment at cursor (blank submit = delete)
-c.comment_clear()   -- remove every comment on the current buffer
-c.comment_list()    -- { { id, relpath, line, text, created_at } } for pickers
-c.render_for(bufnr, relpath) -- render comments into an arbitrary buffer
+c.comment()                          -- add/edit at cursor (blank submit = delete)
+c.comment_remove({ line1?, line2? }) -- omit for cursor line
+c.comment_clear()                    -- remove every comment in current buffer
+c.comment_preview()                  -- popup with full comment text
+c.comment_list()                     -- { { id, relpath, line, text, created_at } } for pickers
+c.render_for(bufnr, relpath)         -- render comments into an arbitrary buffer
 ```
 
 ## Storage
