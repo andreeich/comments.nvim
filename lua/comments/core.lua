@@ -75,12 +75,31 @@ function M.reload(bufnr)
 			bs.entries[#bs.entries + 1] = { id = c.id, extmark_id = extmark_id }
 		end
 	end
+	bs.last_mtime = storage.mtime(root)
+end
+
+function M.sync(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local root, _ = context_for(bufnr)
+	if not root then
+		return
+	end
+	local bs = get_buffer_state(bufnr)
+	local current = storage.mtime(root)
+	if current == bs.last_mtime then
+		return
+	end
+	M.reload(bufnr)
 end
 
 function M.persist(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local abs = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p")
 	local root, relpath = context_for(bufnr)
 	if not root or not relpath then
+		return
+	end
+	if storage.is_under_storage_dir(root, abs) then
 		return
 	end
 	local bs = get_buffer_state(bufnr)
@@ -99,6 +118,7 @@ function M.persist(bufnr)
 		end
 	end
 	storage.save(root, data)
+	bs.last_mtime = storage.mtime(root)
 end
 
 local function entry_at_line(bufnr, line)
@@ -133,6 +153,7 @@ local function delete_comment(bufnr, root, relpath, entry, index)
 	end
 	data.comments = kept
 	storage.save(root, data)
+	bs.last_mtime = storage.mtime(root)
 end
 
 local function update_comment(bufnr, root, relpath, entry, new_text)
@@ -148,6 +169,7 @@ local function update_comment(bufnr, root, relpath, entry, new_text)
 		end
 	end
 	storage.save(root, data)
+	get_buffer_state(bufnr).last_mtime = storage.mtime(root)
 end
 
 local function create_comment(bufnr, root, relpath, line, text)
@@ -169,6 +191,7 @@ local function create_comment(bufnr, root, relpath, line, text)
 	local extmark_id = render.place(bufnr, line, text)
 	local bs = get_buffer_state(bufnr)
 	bs.entries[#bs.entries + 1] = { id = id, extmark_id = extmark_id }
+	bs.last_mtime = storage.mtime(root)
 end
 
 function M.add(bufnr)
@@ -233,6 +256,7 @@ function M.remove(opts)
 	end
 	data.comments = kept
 	storage.save(root, data)
+	bs.last_mtime = storage.mtime(root)
 end
 
 function M.preview(bufnr)
@@ -282,6 +306,7 @@ function M.clear(bufnr)
 	end
 	data.comments = kept
 	storage.save(root, data)
+	bs.last_mtime = storage.mtime(root)
 end
 
 function M.render_for(bufnr, relpath)
@@ -317,6 +342,13 @@ function M.attach(bufnr)
 		buffer = bufnr,
 		callback = function()
 			M.persist(bufnr)
+		end,
+	})
+	vim.api.nvim_create_autocmd({ "BufEnter", "FocusGained" }, {
+		group = group,
+		buffer = bufnr,
+		callback = function()
+			M.sync(bufnr)
 		end,
 	})
 	state.get(bufnr).enabled = true

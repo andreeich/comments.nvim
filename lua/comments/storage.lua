@@ -27,6 +27,25 @@ function M.json_path(root)
 	return path_join(root, ".comments", "comments.json")
 end
 
+function M.mtime(root)
+	if not root then
+		return nil
+	end
+	local stat = vim.uv.fs_stat(M.json_path(root))
+	if not stat then
+		return nil
+	end
+	return stat.mtime.sec * 1e9 + stat.mtime.nsec
+end
+
+function M.is_under_storage_dir(root, abs_path)
+	if not root or not abs_path then
+		return false
+	end
+	local prefix = root .. "/.comments/"
+	return abs_path:sub(1, #prefix) == prefix
+end
+
 function M.load(root)
 	if not root then
 		return { version = 1, comments = {} }
