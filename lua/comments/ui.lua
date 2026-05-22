@@ -16,7 +16,7 @@ function M.prompt(default, on_submit)
 		height = height,
 		style = "minimal",
 		border = "rounded",
-		title = " Comment (<CR> submit, <S-CR> newline, <Esc> cancel) ",
+		title = " Comment (<C-s> submit, <Esc> cancel) ",
 		title_pos = "left",
 	})
 	local function close()
@@ -30,8 +30,8 @@ function M.prompt(default, on_submit)
 		close()
 		on_submit(text)
 	end
-	vim.keymap.set({ "n", "i" }, "<CR>", submit, { buffer = buf, nowait = true })
-	vim.keymap.set("i", "<S-CR>", "<CR>", { buffer = buf, nowait = true })
+	vim.keymap.set("n", "<CR>", submit, { buffer = buf, nowait = true })
+	vim.keymap.set({ "n", "i" }, "<C-s>", submit, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
 	vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
 	vim.cmd("startinsert!")
