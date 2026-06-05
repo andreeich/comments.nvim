@@ -19,6 +19,8 @@ require("comments").setup({
 - `:CommentRemove` — remove comment on cursor line, or all comments in `:'<,'>` range
 - `:CommentClear` — remove every comment on the current buffer
 - `:CommentPreview` — popup with the full comment on the cursor line
+- `:CommentNext` — jump to the next comment in the current buffer
+- `:CommentPrev` — jump to the previous comment in the current buffer
 
 ## Prompt
 
@@ -35,6 +37,8 @@ vim.keymap.set("n", "<leader>cc", "<cmd>CommentAdd<cr>",     { desc = "Add/Edit 
 vim.keymap.set({ "n", "x" }, "<leader>cr", ":CommentRemove<cr>", { silent = true, desc = "Remove comment(s)" })
 vim.keymap.set("n", "<leader>cR", "<cmd>CommentClear<cr>",   { desc = "Clear all comments" })
 vim.keymap.set("n", "<leader>cp", "<cmd>CommentPreview<cr>", { desc = "Preview comment" })
+vim.keymap.set("n", "]c",         "<cmd>CommentNext<cr>",    { desc = "Next comment" })
+vim.keymap.set("n", "[c",         "<cmd>CommentPrev<cr>",    { desc = "Previous comment" })
 ```
 
 ## API
@@ -49,6 +53,8 @@ c.comment()                          -- add/edit at cursor (blank submit = delet
 c.comment_remove({ line1?, line2? }) -- omit for cursor line
 c.comment_clear()                    -- remove every comment in current buffer
 c.comment_preview()                  -- popup with full comment text
+c.comment_next()                     -- jump to the next comment in the current buffer
+c.comment_prev()                     -- jump to the previous comment in the current buffer
 c.comment_list()                     -- { { id, relpath, line, text, created_at } } for pickers
 c.render_for(bufnr, relpath)         -- render comments into an arbitrary buffer
 ```

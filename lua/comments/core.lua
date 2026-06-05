@@ -131,6 +131,35 @@ local function entry_at_line(bufnr, line)
 	return nil
 end
 
+local function sorted_entries(bufnr)
+	local bs = get_buffer_state(bufnr)
+	local items = {}
+	for _, entry in ipairs(bs.entries) do
+		local line = render.current_line(bufnr, entry.extmark_id)
+		if line then
+			items[#items + 1] = { entry = entry, line = line }
+		end
+	end
+	table.sort(items, function(a, b)
+		if a.line == b.line then
+			return a.entry.id < b.entry.id
+		end
+		return a.line < b.line
+	end)
+	return items
+end
+
+local function jump_to(bufnr, line)
+	local win = vim.fn.bufwinid(bufnr)
+	if win == -1 then
+		vim.api.nvim_set_current_buf(bufnr)
+		win = vim.api.nvim_get_current_win()
+	end
+	vim.api.nvim_set_current_win(win)
+	vim.api.nvim_win_set_cursor(win, { line, 0 })
+	vim.cmd.normal({ args = { "zv" }, bang = true })
+end
+
 local function comment_text(data, id)
 	for _, c in ipairs(data.comments) do
 		if c.id == id then
@@ -257,6 +286,37 @@ function M.remove(opts)
 	data.comments = kept
 	storage.save(root, data)
 	bs.last_mtime = storage.mtime(root)
+end
+
+function M.jump(bufnr, direction)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local items = sorted_entries(bufnr)
+	if #items == 0 then
+		vim.notify("comments.nvim:no comments in buffer", vim.log.levels.INFO)
+		return
+	end
+
+	local current = vim.api.nvim_win_get_cursor(0)[1]
+	local target
+	if direction == "prev" then
+		for i = #items, 1, -1 do
+			if items[i].line < current then
+				target = items[i]
+				break
+			end
+		end
+		target = target or items[#items]
+	else
+		for _, item in ipairs(items) do
+			if item.line > current then
+				target = item
+				break
+			end
+		end
+		target = target or items[1]
+	end
+
+	jump_to(bufnr, target.line)
 end
 
 function M.preview(bufnr)

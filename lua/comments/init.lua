@@ -74,6 +74,12 @@ function M.setup(opts)
 	user_command("CommentPreview", function()
 		core.preview(current_buf())
 	end, {})
+	user_command("CommentNext", function()
+		core.jump(current_buf(), "next")
+	end, {})
+	user_command("CommentPrev", function()
+		core.jump(current_buf(), "prev")
+	end, {})
 end
 
 M.attach = function(bufnr)
@@ -93,6 +99,12 @@ M.comment_clear = function()
 end
 M.comment_preview = function()
 	core.preview(current_buf())
+end
+M.comment_next = function()
+	core.jump(current_buf(), "next")
+end
+M.comment_prev = function()
+	core.jump(current_buf(), "prev")
 end
 M.comment_list = function()
 	return core.list()
