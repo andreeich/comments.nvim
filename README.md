@@ -18,13 +18,13 @@ require("comments").setup({
 - `:CommentAdd` — add/edit a comment on the current line; blank submit deletes
 - `:CommentRemove` — remove comment on cursor line, or all comments in `:'<,'>` range
 - `:CommentClear` — remove every comment on the current buffer
-- `:CommentPreview` — popup with the full comment on the cursor line
+- `:CommentPreview` — wrapped popup with the full comment on the cursor line
 - `:CommentNext` — jump to the next comment in the current buffer
 - `:CommentPrev` — jump to the previous comment in the current buffer
 
 ## Prompt
 
-Add/edit opens a floating buffer (markdown). Multiline supported.
+Add/edit opens a floating buffer (markdown, wrapped). Multiline supported.
 
 - `<CR>` submit
 - `<S-CR>` insert newline (requires terminal with extended keyboard protocol; use `<C-j>` as fallback)

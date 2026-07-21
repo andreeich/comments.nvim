@@ -1,5 +1,21 @@
 local M = {}
 
+local function wrapped_height(lines, width, min_height, max_height)
+	local height = 0
+	local content_width = math.max(width, 1)
+	for _, line in ipairs(lines) do
+		local display_width = math.max(vim.fn.strdisplaywidth(line), 1)
+		height = height + math.max(1, math.ceil(display_width / content_width))
+	end
+	return math.min(math.max(height, min_height), max_height)
+end
+
+local function enable_wrap(win)
+	vim.api.nvim_set_option_value("wrap", true, { win = win })
+	vim.api.nvim_set_option_value("linebreak", true, { win = win })
+	vim.api.nvim_set_option_value("breakindent", true, { win = win })
+end
+
 function M.prompt(default, on_submit)
 	local lines = vim.split(default or "", "\n", { plain = true })
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -7,7 +23,7 @@ function M.prompt(default, on_submit)
 	vim.bo[buf].bufhidden = "wipe"
 	vim.bo[buf].filetype = "markdown"
 	local width = math.min(math.max(60, math.floor(vim.o.columns * 0.5)), 100)
-	local height = math.min(math.max(5, #lines + 1), 15)
+	local height = wrapped_height(lines, width, 5, 15)
 	local win = vim.api.nvim_open_win(buf, true, {
 		relative = "cursor",
 		row = 1,
@@ -19,6 +35,7 @@ function M.prompt(default, on_submit)
 		title = " Comment (<C-s> submit, <Esc> cancel) ",
 		title_pos = "left",
 	})
+	enable_wrap(win)
 	local function close()
 		if vim.api.nvim_win_is_valid(win) then
 			vim.api.nvim_win_close(win, true)
@@ -53,12 +70,8 @@ end
 function M.show_popup(text)
 	M.close_popup()
 	local lines = vim.split(text or "", "\n", { plain = true })
-	local width = 0
-	for _, l in ipairs(lines) do
-		width = math.max(width, vim.fn.strdisplaywidth(l))
-	end
-	width = math.min(math.max(width, 10), 80)
-	local height = math.min(#lines, 20)
+	local width = math.min(math.max(40, math.floor(vim.o.columns * 0.4)), 80)
+	local height = wrapped_height(lines, width, 1, 20)
 	local buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	vim.bo[buf].modifiable = false
@@ -74,6 +87,7 @@ function M.show_popup(text)
 		focusable = false,
 		noautocmd = true,
 	})
+	enable_wrap(win)
 	popup.win = win
 	popup.buf = buf
 end

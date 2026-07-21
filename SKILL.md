@@ -1,14 +1,26 @@
 ---
 name: comments
-description: Read, act on, and resolve per-line comments authored by the user in comments.nvim. Triggers when a repo contains .comments/comments.json or when the user references "comments.nvim", "in-line review comments", "resolve my comments".
+description: Read and resolve per-line comments authored by the user in comments.nvim. Triggers on "read comments", when a repo contains .comments/comments.json, or when the user references "comments.nvim", "in-line review comments", or "resolve my comments".
 ---
 
 # comments.nvim — agent skill
 
 comments.nvim lets the user pin notes to specific lines of source files. Notes
 are written to `.comments/comments.json` at the working directory root. They
-are intended as durable, machine-readable context: the user expects you to
-read them, act on the instruction, and remove the entry once resolved.
+are durable, machine-readable context that must be read, addressed, and then
+removed.
+
+Comments have two semantic types:
+
+- **Actionable** — requests a code or documentation change. Make the requested
+  change, then report what was done.
+- **Question** — asks for an explanation or clarification. Answer it in the
+  final reply; do not change code unless the question also explicitly requests
+  a change.
+
+Infer the type from the comment's wording. If unclear, treat it as actionable
+only when a concrete change is requested; otherwise answer it as a question.
+Both types are resolved the same way: remove the comment after addressing it.
 
 ## File layout
 
@@ -41,27 +53,28 @@ Fields:
 - `line` — 1-indexed line number when the comment was last persisted by nvim.
 - `line_text` — literal contents of `line` at write time. Use this to find
   the current location (line numbers drift when files are edited).
-- `text` — the user's note. This is the instruction you must satisfy.
+- `text` — the user's note. This is the instruction or question you must
+  address.
 - `created_at` — ISO 8601 UTC.
 
-## Resolving a comment
+## Resolving comments
 
-The workflow is fixed:
+Process every pending comment unless the user asks for a subset. For each
+comment:
 
-1. **Locate the anchor.** Read the file at `relpath`. Try matching `line_text`
-   first (full-line exact match). If found, use that line number. If not
-   found, fall back to `line`. If neither matches anything plausible, ask the
-   user before guessing.
-2. **Act on `text`.** Treat it as a normal instruction from the user
-   (refactor, fix, answer a question via code change, etc.).
-3. **Remove the entry.** Once the instruction is satisfied, delete the
-   comment from `comments`. Identify it by `id`. Write the updated JSON
-   back to `.comments/comments.json`. Preserve `version` and the order of
-   remaining entries.
+1. **Locate the anchor.** Read the file at `relpath`. Match `line_text` first
+   (full-line exact match). If found, use that line. If it is not found, fall
+   back to `line`. If neither identifies a plausible location, ask the user
+   before guessing.
+2. **Classify and address it.** For an actionable comment, make the requested
+   change. For a question, determine the answer and include it in the final
+   reply without making an unrelated code change.
+3. **Clean it up.** After the comment has been addressed, delete only that
+   entry from `comments`, identified by `id`. Write the updated JSON back to
+   `.comments/comments.json`. Preserve `version` and the order of remaining
+   entries.
 
-If a comment is asking a question rather than requesting a change, answer it
-in your reply and still remove the entry — the user's expectation is that
-resolved comments disappear from the file.
+Never leave an addressed actionable or question comment pending.
 
 ## Rules
 
